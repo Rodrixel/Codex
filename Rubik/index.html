@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resolver Cubo de Rubik</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        #steps {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Resolver Cubo de Rubik</h1>
+    <button id="stepByStepBtn">Resolver paso a paso</button>
+    <button id="skipStepsBtn">Resolver directamente</button>
+    <div id="steps"></div>
+
+    <script>
+        const steps = [
+            "Paso 1: Resolver la cruz blanca.",
+            "Paso 2: Resolver las esquinas blancas.",
+            "Paso 3: Resolver la segunda capa.",
+            "Paso 4: Hacer la cruz amarilla.",
+            "Paso 5: Orientar las esquinas amarillas.",
+            "Paso 6: Colocar las esquinas amarillas.",
+            "Paso 7: Colocar las aristas amarillas."
+        ];
+
+        const stepsDiv = document.getElementById('steps');
+        const stepByStepBtn = document.getElementById('stepByStepBtn');
+        const skipStepsBtn = document.getElementById('skipStepsBtn');
+
+        stepByStepBtn.addEventListener('click', () => {
+            stepsDiv.innerHTML = ""; // Limpiar pasos previos
+            let i = 0;
+
+            const interval = setInterval(() => {
+                if (i < steps.length) {
+                    const step = document.createElement('p');
+                    step.textContent = steps[i];
+                    stepsDiv.appendChild(step);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000); // Mostrar un paso cada 2 segundos
+        });
+
+        skipStepsBtn.addEventListener('click', () => {
+            stepsDiv.innerHTML = ""; // Limpiar pasos previos
+            const solution = document.createElement('p');
+            solution.textContent = "Cubo resuelto directamente.";
+            stepsDiv.appendChild(solution);
+        });
+    </script>
+</body>
+
+</html>
