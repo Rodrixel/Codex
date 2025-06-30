@@ -4,63 +4,896 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resolver Cubo de Rubik</title>
+    <title>Simulador 3D del Cubo Rubik</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        #steps {
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .cube-section {
+            flex: 1;
+            min-width: 500px;
+            background: rgba(25, 25, 50, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #4fc3f7;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            font-size: 1.5rem;
+        }
+
+        #cube-container {
+            width: 100%;
+            height: 500px;
+            background: rgba(10, 10, 20, 0.6);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
             margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 18px;
+            background: rgba(50, 100, 200, 0.8);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            background: rgba(70, 130, 250, 1);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary {
+            background: rgba(46, 204, 113, 0.8);
+        }
+
+        .btn-primary:hover {
+            background: rgba(46, 204, 113, 1);
+        }
+
+        .btn-danger {
+            background: rgba(231, 76, 60, 0.8);
+        }
+
+        .btn-danger:hover {
+            background: rgba(231, 76, 60, 1);
+        }
+
+        .tutorial-section {
+            flex: 1;
+            min-width: 400px;
+            background: rgba(25, 25, 50, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tutorial-content {
+            flex: 1;
+            background: rgba(10, 10, 30, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .tutorial-step {
+            background: rgba(30, 30, 60, 0.7);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4fc3f7;
+            transition: all 0.3s ease;
+        }
+
+        .tutorial-step.active {
+            background: rgba(40, 100, 180, 0.6);
+            border-left: 4px solid #ffeb3b;
+        }
+
+        .step-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #4fc3f7;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-content {
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        .notation {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #ffeb3b;
+            margin: 0 3px;
+        }
+
+        .tutorial-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4fc3f7, #00bcd4);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .notation-guide {
+            margin-top: 40px;
+            background: rgba(25, 25, 50, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .notation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .notation-item {
+            background: rgba(30, 30, 60, 0.7);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .notation-symbol {
+            width: 40px;
+            height: 40px;
+            background: rgba(50, 100, 200, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1100px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .cube-section,
+            .tutorial-section {
+                min-width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>Resolver Cubo de Rubik</h1>
-    <button id="stepByStepBtn">Resolver paso a paso</button>
-    <button id="skipStepsBtn">Resolver directamente</button>
-    <div id="steps"></div>
+    <div class="container">
+        <header>
+            <h1>Simulador 3D del Cubo Rubik</h1>
+            <p class="subtitle">Visualiza, interactúa y aprende a resolver el cubo Rubik con nuestro simulador 3D
+                interactivo y tutorial paso a paso</p>
+        </header>
+
+        <div class="main-content">
+            <div class="cube-section">
+                <h2 class="section-title">
+                    <i>🧊</i> Cubo Rubik 3D
+                </h2>
+                <div id="cube-container"></div>
+
+                <div class="controls">
+                    <button class="btn" id="scramble-btn">
+                        <i>🔀</i> Revolver Cubo
+                    </button>
+                    <button class="btn btn-primary" id="solve-btn">
+                        <i>✅</i> Resolver Paso a Paso
+                    </button>
+                    <button class="btn btn-danger" id="reset-btn">
+                        <i>🔄</i> Reiniciar Cubo
+                    </button>
+                </div>
+            </div>
+
+            <div class="tutorial-section">
+                <h2 class="section-title">
+                    <i>📝</i> Tutorial de Solución
+                </h2>
+                <div class="tutorial-content" id="tutorial-content">
+                    <div class="tutorial-step active">
+                        <div class="step-title">Paso 1: Cruz Blanca</div>
+                        <div class="step-content">
+                            <p>Comienza creando una cruz blanca en la cara superior (U). Las piezas laterales deben
+                                coincidir con los centros de las caras adyacentes.</p>
+                            <p>Ejecuta: <span class="notation">F</span> <span class="notation">U</span> <span
+                                    class="notation">R'</span> <span class="notation">U'</span></p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-title">Paso 2: Esquinas Blancas</div>
+                        <div class="step-content">
+                            <p>Completa la primera capa colocando las esquinas blancas en su posición correcta.</p>
+                            <p>Algoritmo para esquina incorrecta: <span class="notation">R</span> <span
+                                    class="notation">U</span> <span class="notation">R'</span> <span
+                                    class="notation">U'</span></p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-title">Paso 3: Segunda Capa</div>
+                        <div class="step-content">
+                            <p>Coloca las aristas de la segunda capa sin afectar la primera capa ya completada.</p>
+                            <p>Para mover arista a la izquierda: <span class="notation">U'</span> <span
+                                    class="notation">L'</span> <span class="notation">U</span> <span
+                                    class="notation">L</span> <span class="notation">U</span> <span
+                                    class="notation">F</span> <span class="notation">U'</span> <span
+                                    class="notation">F'</span></p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-title">Paso 4: Cruz Amarilla</div>
+                        <div class="step-content">
+                            <p>Crea una cruz amarilla en la cara superior (ahora amarilla).</p>
+                            <p>Algoritmo: <span class="notation">F</span> <span class="notation">R</span> <span
+                                    class="notation">U</span> <span class="notation">R'</span> <span
+                                    class="notation">U'</span> <span class="notation">F'</span></p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-title">Paso 5: Orientar Cruz Amarilla</div>
+                        <div class="step-content">
+                            <p>Asegura que las aristas amarillas coincidan con los colores de los centros laterales.</p>
+                            <p>Gira la capa superior hasta que al menos dos aristas coincidan. Algoritmo: <span
+                                    class="notation">R</span> <span class="notation">U</span> <span
+                                    class="notation">R'</span> <span class="notation">U</span> <span
+                                    class="notation">R</span> <span class="notation">U2</span> <span
+                                    class="notation">R'</span></p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-title">Paso 6: Posicionar Esquinas</div>
+                        <div class="step-content">
+                            <p>Coloca las esquinas amarillas en su posición correcta, aunque no estén orientadas
+                                correctamente.</p>
+                            <p>Algoritmo: <span class="notation">U</span> <span class="notation">R</span> <span
+                                    class="notation">U'</span> <span class="notation">L'</span> <span
+                                    class="notation">U</span> <span class="notation">R'</span> <span
+                                    class="notation">U'</span> <span class="notation">L</span></p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-title">Paso 7: Orientar Esquinas</div>
+                        <div class="step-content">
+                            <p>Gira las esquinas amarillas para completar el cubo.</p>
+                            <p>Algoritmo final: <span class="notation">R'</span> <span class="notation">D'</span> <span
+                                    class="notation">R</span> <span class="notation">D</span> (repetir hasta que la
+                                pieza se oriente)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+
+                <div class="tutorial-controls">
+                    <button class="btn" id="prev-step">
+                        <i>◀</i> Paso Anterior
+                    </button>
+                    <button class="btn btn-primary" id="next-step">
+                        Siguiente Paso <i>▶</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="notation-guide">
+            <h2 class="section-title">
+                <i>🔤</i> Notación del Cubo Rubik
+            </h2>
+            <p>La notación estándar utiliza letras para representar los movimientos de cada cara:</p>
+
+            <div class="notation-grid">
+                <div class="notation-item">
+                    <div class="notation-symbol">U</div>
+                    <div>Capa Superior (Up) - Giro horario</div>
+                </div>
+                <div class="notation-item">
+                    <div class="notation-symbol">D</div>
+                    <div>Capa Inferior (Down) - Giro horario</div>
+                </div>
+                <div class="notation-item">
+                    <div class="notation-symbol">L</div>
+                    <div>Capa Izquierda (Left) - Giro horario</div>
+                </div>
+                <div class="notation-item">
+                    <div class="notation-symbol">R</div>
+                    <div>Capa Derecha (Right) - Giro horario</div>
+                </div>
+                <div class="notation-item">
+                    <div class="notation-symbol">F</div>
+                    <div>Capa Frontal (Front) - Giro horario</div>
+                </div>
+                <div class="notation-item">
+                    <div class="notation-symbol">B</div>
+                    <div>Capa Trasera (Back) - Giro horario</div>
+                </div>
+                <div class="notation-item">
+                    <div class="notation-symbol">X'</div>
+                    <div>Giro antihorario de la cara X</div>
+                </div>
+                <div class="notation-item">
+                    <div class="notation-symbol">X2</div>
+                    <div>Doble giro (180°) de la cara X</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Simulador 3D del Cubo Rubik - Desarrollado por Ingeniero en Sistemas con Diplomado en Desarrollo Web</p>
+            <p>© 2023 - Todos los derechos reservados</p>
+        </footer>
+    </div>
 
     <script>
-        const steps = [
-            "Paso 1: Resolver la cruz blanca.",
-            "Paso 2: Resolver las esquinas blancas.",
-            "Paso 3: Resolver la segunda capa.",
-            "Paso 4: Hacer la cruz amarilla.",
-            "Paso 5: Orientar las esquinas amarillas.",
-            "Paso 6: Colocar las esquinas amarillas.",
-            "Paso 7: Colocar las aristas amarillas."
-        ];
+        // Variables globales
+        let scene, camera, renderer, cube;
+        let cubePieces = [];
+        let currentStep = 0;
+        let isSolving = false;
+        let animationInProgress = false;
 
-        const stepsDiv = document.getElementById('steps');
-        const stepByStepBtn = document.getElementById('stepByStepBtn');
-        const skipStepsBtn = document.getElementById('skipStepsBtn');
+        // Colores estándar del cubo Rubik
+        const colors = {
+            up: 0xFFFFFF,     // Blanco
+            down: 0xFFFF00,   // Amarillo
+            left: 0xFFA500,   // Naranja
+            right: 0xFF0000,  // Rojo
+            front: 0x00FF00,  // Verde
+            back: 0x0000FF    // Azul
+        };
 
-        stepByStepBtn.addEventListener('click', () => {
-            stepsDiv.innerHTML = ""; // Limpiar pasos previos
-            let i = 0;
+        // Inicializar la escena Three.js
+        function init() {
+            // Crear escena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c0c20);
 
-            const interval = setInterval(() => {
-                if (i < steps.length) {
-                    const step = document.createElement('p');
-                    step.textContent = steps[i];
-                    stepsDiv.appendChild(step);
-                    i++;
-                } else {
-                    clearInterval(interval);
+            // Crear cámara
+            camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+            camera.position.set(5, 5, 7);
+
+            // Crear renderizador
+            const container = document.getElementById('cube-container');
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Añadir luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight1.position.set(5, 10, 7);
+            scene.add(directionalLight1);
+
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+            directionalLight2.position.set(-5, -10, -7);
+            scene.add(directionalLight2);
+
+            // Crear el cubo Rubik
+            createRubiksCube();
+
+            // Añadir ejes de referencia (opcional)
+            // const axesHelper = new THREE.AxesHelper(5);
+            // scene.add(axesHelper);
+
+            // Manejar redimensionamiento
+            window.addEventListener('resize', onWindowResize);
+
+            // Iniciar animación
+            animate();
+
+            // Configurar eventos
+            setupEventListeners();
+        }
+
+        // Crear el cubo Rubik
+        function createRubiksCube() {
+            // Crear un grupo para contener todas las piezas
+            cube = new THREE.Group();
+            scene.add(cube);
+
+            // Crear 26 piezas (3x3x3 sin el núcleo central)
+            const pieceSize = 1;
+            const gap = 0.05;
+            const totalSize = pieceSize + gap;
+
+            for (let x = -1; x <= 1; x++) {
+                for (let y = -1; y <= 1; y++) {
+                    for (let z = -1; z <= 1; z++) {
+                        // Saltar el cubo central
+                        if (x === 0 && y === 0 && z === 0) continue;
+
+                        // Crear geometría y materiales
+                        const geometry = new THREE.BoxGeometry(
+                            pieceSize,
+                            pieceSize,
+                            pieceSize
+                        );
+
+                        // Crear materiales para cada cara
+                        const materials = [
+                            new THREE.MeshPhongMaterial({ color: getFaceColor('left', x, y, z) }),   // Izquierda
+                            new THREE.MeshPhongMaterial({ color: getFaceColor('right', x, y, z) }),  // Derecha
+                            new THREE.MeshPhongMaterial({ color: getFaceColor('up', x, y, z) }),     // Arriba
+                            new THREE.MeshPhongMaterial({ color: getFaceColor('down', x, y, z) }),   // Abajo
+                            new THREE.MeshPhongMaterial({ color: getFaceColor('front', x, y, z) }),  // Frente
+                            new THREE.MeshPhongMaterial({ color: getFaceColor('back', x, y, z) })    // Atrás
+                        ];
+
+                        // Crear pieza
+                        const piece = new THREE.Mesh(geometry, materials);
+
+                        // Posicionar la pieza
+                        piece.position.set(x * totalSize, y * totalSize, z * totalSize);
+
+                        // Guardar datos de posición
+                        piece.userData = { originalPosition: { x, y, z }, currentPosition: { x, y, z } };
+
+                        // Añadir al grupo
+                        cube.add(piece);
+                        cubePieces.push(piece);
+                    }
                 }
-            }, 2000); // Mostrar un paso cada 2 segundos
-        });
+            }
 
-        skipStepsBtn.addEventListener('click', () => {
-            stepsDiv.innerHTML = ""; // Limpiar pasos previos
-            const solution = document.createElement('p');
-            solution.textContent = "Cubo resuelto directamente.";
-            stepsDiv.appendChild(solution);
-        });
+            // Rotar el cubo para mejor vista inicial
+            cube.rotation.x = -0.5;
+            cube.rotation.y = 0.8;
+        }
+
+        // Obtener color para cada cara según la posición
+        function getFaceColor(face, x, y, z) {
+            switch (face) {
+                case 'left': return x === -1 ? colors.left : 0x222222;
+                case 'right': return x === 1 ? colors.right : 0x222222;
+                case 'up': return y === 1 ? colors.up : 0x222222;
+                case 'down': return y === -1 ? colors.down : 0x222222;
+                case 'front': return z === 1 ? colors.front : 0x222222;
+                case 'back': return z === -1 ? colors.back : 0x222222;
+                default: return 0x222222;
+            }
+        }
+
+        // Animación de rotación de una capa
+        function rotateLayer(layer, angle, duration = 500) {
+            if (animationInProgress) return;
+            animationInProgress = true;
+
+            // Determinar eje y piezas a rotar
+            let axis, pieces;
+
+            switch (layer) {
+                case 'U':
+                    axis = new THREE.Vector3(0, 1, 0);
+                    pieces = cubePieces.filter(p => p.userData.currentPosition.y === 1);
+                    break;
+                case 'D':
+                    axis = new THREE.Vector3(0, 1, 0);
+                    pieces = cubePieces.filter(p => p.userData.currentPosition.y === -1);
+                    angle = -angle; // Invertir ángulo para capa inferior
+                    break;
+                case 'L':
+                    axis = new THREE.Vector3(1, 0, 0);
+                    pieces = cubePieces.filter(p => p.userData.currentPosition.x === -1);
+                    break;
+                case 'R':
+                    axis = new THREE.Vector3(1, 0, 0);
+                    pieces = cubePieces.filter(p => p.userData.currentPosition.x === 1);
+                    angle = -angle; // Invertir ángulo para capa derecha
+                    break;
+                case 'F':
+                    axis = new THREE.Vector3(0, 0, 1);
+                    pieces = cubePieces.filter(p => p.userData.currentPosition.z === 1);
+                    angle = -angle; // Invertir ángulo para capa frontal
+                    break;
+                case 'B':
+                    axis = new THREE.Vector3(0, 0, 1);
+                    pieces = cubePieces.filter(p => p.userData.currentPosition.z === -1);
+                    break;
+                default:
+                    return;
+            }
+
+            // Crear grupo temporal para la animación
+            const group = new THREE.Group();
+            scene.add(group);
+
+            // Añadir piezas al grupo
+            pieces.forEach(piece => {
+                cube.remove(piece);
+                group.add(piece);
+            });
+
+            // Configurar animación con Tween.js
+            const targetRotation = {};
+            if (axis.x === 1) targetRotation.x = angle;
+            if (axis.y === 1) targetRotation.y = angle;
+            if (axis.z === 1) targetRotation.z = angle;
+
+            const tween = new TWEEN.Tween(group.rotation)
+                .to(targetRotation, duration)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .onUpdate(() => {
+                    // Actualizar rotación durante la animación
+                })
+                .onComplete(() => {
+                    // Actualizar posiciones después de la animación
+                    pieces.forEach(piece => {
+                        group.remove(piece);
+                        cube.add(piece);
+
+                        // Actualizar posición lógica
+                        updatePiecePosition(piece, layer, angle);
+                    });
+
+                    scene.remove(group);
+                    animationInProgress = false;
+
+                    // Si estamos en modo solución, avanzar al siguiente paso
+                    if (isSolving) {
+                        setTimeout(nextTutorialStep, 300);
+                    }
+                })
+                .start();
+        }
+
+        // Actualizar posición lógica de una pieza después de rotar
+        function updatePiecePosition(piece, layer, angle) {
+            const { x, y, z } = piece.userData.currentPosition;
+            let newX = x, newY = y, newZ = z;
+
+            const radAngle = angle * (Math.PI / 180);
+            const sin = Math.sin(radAngle);
+            const cos = Math.cos(radAngle);
+
+            switch (layer) {
+                case 'U': // Rotación en Y
+                    if (y === 1) {
+                        newX = Math.round(x * cos - z * sin);
+                        newZ = Math.round(x * sin + z * cos);
+                    }
+                    break;
+                case 'D': // Rotación en Y (invertida)
+                    if (y === -1) {
+                        newX = Math.round(x * cos - z * sin);
+                        newZ = Math.round(x * sin + z * cos);
+                    }
+                    break;
+                case 'L': // Rotación en X
+                    if (x === -1) {
+                        newY = Math.round(y * cos - z * sin);
+                        newZ = Math.round(y * sin + z * cos);
+                    }
+                    break;
+                case 'R': // Rotación en X (invertida)
+                    if (x === 1) {
+                        newY = Math.round(y * cos - z * sin);
+                        newZ = Math.round(y * sin + z * cos);
+                    }
+                    break;
+                case 'F': // Rotación en Z (invertida)
+                    if (z === 1) {
+                        newX = Math.round(x * cos - y * sin);
+                        newY = Math.round(x * sin + y * cos);
+                    }
+                    break;
+                case 'B': // Rotación en Z
+                    if (z === -1) {
+                        newX = Math.round(x * cos - y * sin);
+                        newY = Math.round(x * sin + y * cos);
+                    }
+                    break;
+            }
+
+            piece.userData.currentPosition = { x: newX, y: newY, z: newZ };
+        }
+
+        // Revolver el cubo
+        function scrambleCube() {
+            if (animationInProgress) return;
+
+            const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
+            const rotations = [90, -90, 180];
+
+            // Realizar 20 movimientos aleatorios
+            let count = 0;
+            const interval = setInterval(() => {
+                if (count >= 20) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                const move = moves[Math.floor(Math.random() * moves.length)];
+                const rotation = rotations[Math.floor(Math.random() * rotations.length)];
+
+                rotateLayer(move, rotation, 200);
+                count++;
+            }, 250);
+        }
+
+        // Reiniciar el cubo a su estado resuelto
+        function resetCube() {
+            if (animationInProgress) return;
+
+            cubePieces.forEach(piece => {
+                const { x, y, z } = piece.userData.originalPosition;
+                piece.userData.currentPosition = { x, y, z };
+
+                // Resetear posición física
+                const totalSize = 1.05;
+                piece.position.set(x * totalSize, y * totalSize, z * totalSize);
+
+                // Resetear rotación
+                piece.rotation.set(0, 0, 0);
+
+                // Resetear materiales
+                const materials = piece.material;
+                for (let i = 0; i < materials.length; i++) {
+                    materials[i].color.set(getFaceColor(
+                        ['left', 'right', 'up', 'down', 'front', 'back'][i],
+                        x, y, z
+                    ));
+                }
+            });
+
+            // Resetear tutorial
+            currentStep = 0;
+            updateTutorialSteps();
+            document.getElementById('progress-bar').style.width = '0%';
+        }
+
+        // Avanzar en el tutorial
+        function nextTutorialStep() {
+            if (currentStep < 6) {
+                currentStep++;
+                updateTutorialSteps();
+                executeTutorialStep();
+            } else {
+                isSolving = false;
+            }
+        }
+
+        // Retroceder en el tutorial
+        function prevTutorialStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateTutorialSteps();
+            }
+        }
+
+        // Actualizar visualización de pasos del tutorial
+        function updateTutorialSteps() {
+            const steps = document.querySelectorAll('.tutorial-step');
+            steps.forEach((step, index) => {
+                if (index === currentStep) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+
+            // Actualizar barra de progreso
+            const progress = (currentStep / 6) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+        }
+
+        // Ejecutar el paso actual del tutorial
+        function executeTutorialStep() {
+            if (!isSolving) return;
+
+            // Movimientos para cada paso del tutorial
+            const stepMoves = [
+                ['F', 90], ['U', 90], ['R', -90], ['U', -90],
+                ['R', 90], ['U', 90], ['R', -90], ['U', -90],
+                ['F', -90],
+                ['U', -90], ['L', -90], ['U', 90], ['L', 90], ['U', 90], ['F', 90], ['U', -90], ['F', -90],
+                ['F', 90], ['R', 90], ['U', 90], ['R', -90], ['U', -90], ['F', -90],
+                ['R', 90], ['U', 90], ['R', -90], ['U', 90], ['R', 90], ['U', 180], ['R', -90],
+                ['U', 90], ['R', 90], ['U', -90], ['L', -90], ['U', 90], ['R', -90], ['U', -90], ['L', 90],
+                ['R', -90], ['D', -90], ['R', 90], ['D', 90]
+            ];
+
+            // Realizar los movimientos del paso actual
+            let index = 0;
+            const stepIndex = currentStep;
+            const movesForStep = stepMoves.slice(stepIndex * 3, (stepIndex + 1) * 3);
+
+            function executeNextMove() {
+                if (index < movesForStep.length && stepIndex === currentStep) {
+                    const [move, angle] = movesForStep[index];
+                    rotateLayer(move, angle, 400);
+                    index++;
+                    setTimeout(executeNextMove, 500);
+                }
+            }
+
+            executeNextMove();
+        }
+
+        // Iniciar solución paso a paso
+        function startSolving() {
+            if (isSolving || animationInProgress) return;
+
+            isSolving = true;
+            currentStep = 0;
+            updateTutorialSteps();
+            executeTutorialStep();
+        }
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            document.getElementById('scramble-btn').addEventListener('click', scrambleCube);
+            document.getElementById('solve-btn').addEventListener('click', startSolving);
+            document.getElementById('reset-btn').addEventListener('click', resetCube);
+            document.getElementById('prev-step').addEventListener('click', prevTutorialStep);
+            document.getElementById('next-step').addEventListener('click', nextTutorialStep);
+
+            // Controles de teclado para rotar el cubo
+            document.addEventListener('keydown', (e) => {
+                if (animationInProgress) return;
+
+                switch (e.key.toUpperCase()) {
+                    case 'U': rotateLayer('U', 90); break;
+                    case 'I': rotateLayer('U', -90); break;
+                    case 'D': rotateLayer('D', 90); break;
+                    case 'C': rotateLayer('D', -90); break;
+                    case 'L': rotateLayer('L', 90); break;
+                    case 'J': rotateLayer('L', -90); break;
+                    case 'R': rotateLayer('R', 90); break;
+                    case 'K': rotateLayer('R', -90); break;
+                    case 'F': rotateLayer('F', 90); break;
+                    case 'V': rotateLayer('F', -90); break;
+                    case 'B': rotateLayer('B', 90); break;
+                    case 'N': rotateLayer('B', -90); break;
+                }
+            });
+        }
+
+        // Manejar redimensionamiento de ventana
+        function onWindowResize() {
+            const container = document.getElementById('cube-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Función de animación
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotar el cubo suavemente
+            if (!animationInProgress && !isSolving) {
+                cube.rotation.y += 0.002;
+            }
+
+            // Actualizar animaciones Tween.js
+            TWEEN.update();
+
+            renderer.render(scene, camera);
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 
