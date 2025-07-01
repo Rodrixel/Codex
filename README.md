@@ -1,3 +1,7 @@
-Rubik
-
-Este codigo resolvera el cubo rubik o permitira al usuario aprender a resolverlo por partes.
+git init
+git remote add origin <repository_url>
+git branch -M main
+git add .
+git commit -m 'Your commit message here!'
+git status
+git push -u origin main
