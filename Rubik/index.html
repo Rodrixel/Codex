@@ -4,858 +4,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cubo de Rubik 3D Interactivo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.min.js"></script>
+    <title>Rubik 3D Interactivo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary: #00bcd4;
-            --secondary: #ff4081;
-            --dark: #1a1a2e;
-            --light: #f8f9fa;
-        }
-
         body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            margin: 0;
+            background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
             color: white;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             min-height: 100vh;
-            padding-bottom: 30px;
-            overflow-x: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        .header {
-            background: rgba(0, 0, 0, 0.6);
-            border-bottom: 2px solid var(--primary);
-            padding: 15px 0;
-            margin-bottom: 30px;
+        canvas {
+            width: 600px;
+            height: 600px;
+            box-shadow: 0 20px 50px rgba(0, 255, 255, 0.2);
         }
 
-        .rubik-container {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            height: 70vh;
-            position: relative;
+        #controls {
+            margin-top: 1rem;
         }
 
-        .tutorial-panel {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            overflow-y: auto;
-            height: 70vh;
+        .rubik-btn {
+            margin: 0.25rem;
+        }
+
+        #tutorial {
+            background: #212529;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            max-width: 600px;
         }
 
         .step {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-            border-left: 3px solid transparent;
+            margin-bottom: 0.5rem;
         }
 
-        .step.active {
-            background: rgba(0, 188, 212, 0.25);
-            border-left: 4px solid var(--primary);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .notation {
-            font-family: 'Courier New', monospace;
-            font-size: 1.3rem;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 10px 15px;
-            border-radius: 8px;
-            display: inline-block;
-            margin: 10px 0;
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        .controls-section {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .move-btn {
-            width: 60px;
-            height: 60px;
-            margin: 5px;
-            font-weight: bold;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .move-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(0, 188, 212, 0.5);
-        }
-
-        .control-btn {
-            padding: 10px 20px;
-            font-size: 1.1rem;
-            margin: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .control-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin: 5px 10px;
-            padding: 5px 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-        }
-
-        .color-box {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            margin-right: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .footer {
-            margin-top: 30px;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .step-indicator {
-            background: var(--primary);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.05);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .pulsing {
-            animation: pulse 2s infinite;
+        .highlight {
+            color: #0dcaf0;
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="display-4">Cubo de Rubik 3D Interactivo</h1>
-                    <p class="lead">Visualiza, gira y aprende a resolver el cubo de Rubik con nuestro tutorial paso a
-                        paso</p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="step-indicator">Paso <span id="current-step">1</span>/7</div>
-                </div>
-            </div>
-        </div>
+    <canvas id="rubikCanvas"></canvas>
+    <div id="controls" class="text-center">
+        <button class="btn btn-outline-info rubik-btn" onclick="rotateFace('U')">U</button>
+        <button class="btn btn-outline-info rubik-btn" onclick="rotateFace('Ui')">U'</button>
+        <button class="btn btn-outline-info rubik-btn" onclick="rotateFace('R')">R</button>
+        <button class="btn btn-outline-info rubik-btn" onclick="rotateFace('Ri')">R'</button>
+        <button class="btn btn-outline-info rubik-btn" onclick="rotateFace('F')">F</button>
+        <button class="btn btn-outline-info rubik-btn" onclick="rotateFace('Fi')">F'</button>
     </div>
-
-    <div class="container">
-        <div class="row mb-4">
-            <div class="col-lg-8 mb-4 mb-lg-0">
-                <div class="rubik-container" id="rubik-container">
-                    <!-- Cubo 3D se renderizará aquí -->
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="tutorial-panel">
-                    <h2 class="mb-4 text-center">Tutorial de Solución</h2>
-
-                    <div class="step active">
-                        <h3>Paso 1: Cruz Blanca</h3>
-                        <p>Comienza creando una cruz blanca en la cara superior (U), asegurándote de que los colores
-                            laterales coincidan con los centros de las caras adyacentes.</p>
-                        <div class="notation">F R U R' U' F'</div>
-                    </div>
-
-                    <div class="step">
-                        <h3>Paso 2: Esquinas Blancas</h3>
-                        <p>Coloca las esquinas blancas en su posición correcta, completando así la primera capa.</p>
-                        <div class="notation">R U R' U R U2 R'</div>
-                    </div>
-
-                    <div class="step">
-                        <h3>Paso 3: Segunda Capa</h3>
-                        <p>Resuelve la segunda capa colocando correctamente las aristas del medio.</p>
-                        <div class="notation">U R U' R' U' F' U F</div>
-                    </div>
-
-                    <div class="step">
-                        <h3>Paso 4: Cruz Amarilla</h3>
-                        <p>Crea una cruz amarilla en la cara superior (U) sin preocuparte aún por la posición de las
-                            aristas.</p>
-                        <div class="notation">F R U R' U' F'</div>
-                    </div>
-
-                    <div class="step">
-                        <h3>Paso 5: Orientar Esquinas</h3>
-                        <p>Orientar correctamente las esquinas de la última capa para que el color amarillo quede hacia
-                            arriba.</p>
-                        <div class="notation">R U R' U R U2 R'</div>
-                    </div>
-
-                    <div class="step">
-                        <h3>Paso 6: Posicionar Esquinas</h3>
-                        <p>Colocar las esquinas en su posición correcta, aunque los colores laterales no coincidan aún.
-                        </p>
-                        <div class="notation">U R U' L' U R' U' L</div>
-                    </div>
-
-                    <div class="step">
-                        <h3>Paso 7: Posicionar Aristas</h3>
-                        <p>Finalmente, coloca las aristas en su posición correcta para completar el cubo.</p>
-                        <div class="notation">F2 U L R' F2 L' R U F2</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="controls-section">
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h3 class="text-center mb-3">Controles Principales</h3>
-                    <div class="d-flex flex-wrap justify-content-center">
-                        <button id="scramble-btn" class="btn btn-danger control-btn">
-                            <i class="fas fa-random me-2"></i> Revolver Cubo
-                        </button>
-                        <button id="solve-btn" class="btn btn-success control-btn">
-                            <i class="fas fa-check-circle me-2"></i> Resolver Automático
-                        </button>
-                        <button id="reset-btn" class="btn btn-warning control-btn">
-                            <i class="fas fa-sync-alt me-2"></i> Reiniciar Cubo
-                        </button>
-                        <button id="prev-step-btn" class="btn btn-primary control-btn">
-                            <i class="fas fa-arrow-left me-2"></i> Paso Anterior
-                        </button>
-                        <button id="next-step-btn" class="btn btn-primary control-btn">
-                            <i class="fas fa-arrow-right me-2"></i> Siguiente Paso
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h3 class="text-center mb-3">Movimientos del Cubo</h3>
-                    <div class="d-flex flex-wrap justify-content-center">
-                        <button class="move-btn btn btn-outline-light" data-move="U">U</button>
-                        <button class="move-btn btn btn-outline-light" data-move="U'">U'</button>
-                        <button class="move-btn btn btn-outline-light" data-move="D">D</button>
-                        <button class="move-btn btn btn-outline-light" data-move="D'">D'</button>
-                        <button class="move-btn btn btn-outline-light" data-move="R">R</button>
-                        <button class="move-btn btn btn-outline-light" data-move="R'">R'</button>
-                        <button class="move-btn btn btn-outline-light" data-move="L">L</button>
-                        <button class="move-btn btn btn-outline-light" data-move="L'">L'</button>
-                        <button class="move-btn btn btn-outline-light" data-move="F">F</button>
-                        <button class="move-btn btn btn-outline-light" data-move="F'">F'</button>
-                        <button class="move-btn btn btn-outline-light" data-move="B">B</button>
-                        <button class="move-btn btn btn-outline-light" data-move="B'">B'</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12">
-                    <h3 class="text-center mb-3">Leyenda de Colores</h3>
-                    <div class="d-flex flex-wrap justify-content-center">
-                        <div class="legend-item">
-                            <div class="color-box" style="background-color: white;"></div>
-                            <span>Frente (F)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box" style="background-color: yellow;"></div>
-                            <span>Atrás (B)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box" style="background-color: red;"></div>
-                            <span>Derecha (R)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box" style="background-color: orange;"></div>
-                            <span>Izquierda (L)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box" style="background-color: blue;"></div>
-                            <span>Arriba (U)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="color-box" style="background-color: green;"></div>
-                            <span>Abajo (D)</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="instructions card bg-dark border-primary mt-4">
-            <div class="card-body">
-                <h3 class="card-title text-center text-primary">Instrucciones de Uso</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <ul>
-                            <li><strong>Girar el cubo:</strong> Arrastra con el mouse para rotar la vista del cubo
-                                completo</li>
-                            <li><strong>Zoom:</strong> Usa la rueda del mouse para acercar o alejar</li>
-                            <li><strong>Movimientos:</strong> Haz clic en los botones de notación (U, R, F, etc.) para
-                                rotar caras individuales</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <ul>
-                            <li><strong>Tutorial:</strong> Usa los botones "Paso Anterior" y "Siguiente Paso" para
-                                seguir la solución guiada</li>
-                            <li><strong>Notación:</strong> Las letras representan caras (U=arriba, D=abajo, R=derecha,
-                                L=izquierda, F=frente, B=atrás)</li>
-                            <li><strong>Movimientos:</strong> El símbolo ' indica movimiento en sentido antihorario</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>Cubo de Rubik 3D Interactivo | Desarrollado con Three.js | Notación estándar WCA</p>
-            <p class="text-muted">© 2023 - Todos los derechos reservados</p>
-        </div>
+    <div id="tutorial" class="text-light">
+        <h3>Tutorial para resolver el cubo:</h3>
+        <div class="step">1. Cruz blanca: <span class="highlight">F R U Ri Ui Fi</span></div>
+        <div class="step">2. Esquinas blancas: <span class="highlight">Ri Di R D</span> hasta encajar</div>
+        <div class="step">3. Segunda capa: <span class="highlight">U R Ui Ri Ui Fi U F</span></div>
+        <div class="step">4. Cruz amarilla: <span class="highlight">F R U Ri Ui Fi</span></div>
+        <div class="step">5. Orientar cruz: <span class="highlight">R U Ri U R U U Ri</span></div>
+        <div class="step">6. Esquinas amarillas: <span class="highlight">U R Ui Li U Ri Ui L</span></div>
+        <div class="step">7. Colocar esquinas: <span class="highlight">R U Ri U R U U Ri</span></div>
     </div>
-
-    <!-- Font Awesome para iconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Variables globales
-        let scene, camera, renderer, controls;
-        let cube = []; // Matriz 3x3x3 de cubies
-        let cubeGroup; // Grupo que contiene todos los cubies
-        let rotationInProgress = false;
-        let currentStep = 0;
+        const canvas = document.getElementById('rubikCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
 
-        // Colores del cubo de Rubik
-        const faceColors = [
-            0xFFFFFF, // Frente (F) - Blanco
-            0xFFFF00, // Atrás (B) - Amarillo
-            0xFF0000, // Derecha (R) - Rojo
-            0xFF8000, // Izquierda (L) - Naranja
-            0x0000FF, // Arriba (U) - Azul
-            0x00FF00  // Abajo (D) - Verde
-        ];
+        let angleX = 0.6;
+        let angleY = 0.8;
+        let orbit = 0;
+        const size = 60;
+        const cube = [];
 
-        // Movimientos de solución para el tutorial
-        const solutionMoves = [
-            ["F", "R", "U", "R'", "U'", "F'"],   // Paso 1
-            ["R", "U", "R'", "U", "R", "U2", "R'"],  // Paso 2
-            ["U", "R", "U'", "R'", "U'", "F'", "U", "F"],  // Paso 3
-            ["F", "R", "U", "R'", "U'", "F'"],   // Paso 4
-            ["R", "U", "R'", "U", "R", "U2", "R'"],  // Paso 5
-            ["U", "R", "U'", "L'", "U", "R'", "U'", "L"],  // Paso 6
-            ["F2", "U", "L", "R'", "F2", "L'", "R", "U", "F2"]   // Paso 7
-        ];
-
-        // Inicializar Three.js
-        function init() {
-            // Escena
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x333333);
-
-            // Cámara
-            camera = new THREE.PerspectiveCamera(45, document.getElementById('rubik-container').offsetWidth / document.getElementById('rubik-container').offsetHeight, 0.1, 1000);
-            camera.position.set(5, 5, 7);
-
-            // Renderizador
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(document.getElementById('rubik-container').offsetWidth,
-                document.getElementById('rubik-container').offsetHeight);
-            document.getElementById('rubik-container').appendChild(renderer.domElement);
-
-            // Controles de órbita
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.rotateSpeed = 0.8;
-
-            // Iluminación
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 10, 7);
-            directionalLight.castShadow = true;
-            scene.add(directionalLight);
-
-            // Crear el cubo de Rubik
-            createRubiksCube();
-
-            // Event listeners para botones
-            setupEventListeners();
-
-            // Animación
-            animate();
-
-            // Ajustar al redimensionar ventana
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        // Crear el cubo de Rubik con estructura sólida
-        function createRubiksCube() {
-            cubeGroup = new THREE.Group();
-            scene.add(cubeGroup);
-
-            // Inicializar matriz 3D
-            cube = Array(3).fill().map(() => Array(3).fill().map(() => Array(3).fill(null)));
-
-            // Crear 26 cubies (3x3x3 menos el centro)
-            for (let x = -1; x <= 1; x++) {
-                for (let y = -1; y <= 1; y++) {
-                    for (let z = -1; z <= 1; z++) {
-                        // Saltar el cubie central (no visible)
-                        if (x === 0 && y === 0 && z === 0) continue;
-
-                        const cubie = createCubie(x, y, z);
-                        cubeGroup.add(cubie);
-
-                        // Guardar en matriz (convertir coordenadas a índices: -1,0,1 -> 0,1,2)
-                        cube[x + 1][y + 1][z + 1] = cubie;
-                    }
+        for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+                for (let z = -1; z <= 1; z++) {
+                    cube.push({ x, y, z });
                 }
             }
         }
 
-        // Crear un cubie individual con estructura sólida
-        function createCubie(x, y, z) {
-            const size = 0.95;
-            const geometry = new THREE.BoxGeometry(size, size, size);
+        let dragging = false;
+        let lastX, lastY;
 
-            // Crear materiales para cada cara
-            const materials = [];
-            for (let i = 0; i < 6; i++) {
-                // Determinar si esta cara debe tener color
-                let color = 0x222222; // Color oscuro por defecto (caras internas)
+        canvas.addEventListener('mousedown', e => {
+            dragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
 
-                // Cara frontal (z = 1)
-                if (z === 1 && i === 4) color = faceColors[0];
-                // Cara trasera (z = -1)
-                if (z === -1 && i === 5) color = faceColors[1];
-                // Cara derecha (x = 1)
-                if (x === 1 && i === 0) color = faceColors[2];
-                // Cara izquierda (x = -1)
-                if (x === -1 && i === 1) color = faceColors[3];
-                // Cara superior (y = 1)
-                if (y === 1 && i === 2) color = faceColors[4];
-                // Cara inferior (y = -1)
-                if (y === -1 && i === 3) color = faceColors[5];
+        canvas.addEventListener('mouseup', () => dragging = false);
+        canvas.addEventListener('mouseleave', () => dragging = false);
 
-                materials.push(new THREE.MeshLambertMaterial({
-                    color: color,
-                    emissive: 0x0,
-                    emissiveIntensity: 0,
-                    flatShading: false
-                }));
+        canvas.addEventListener('mousemove', e => {
+            if (dragging) {
+                angleY += (e.clientX - lastX) * 0.01;
+                angleX += (e.clientY - lastY) * 0.01;
+                lastX = e.clientX;
+                lastY = e.clientY;
             }
+        });
 
-            const cubie = new THREE.Mesh(geometry, materials);
-            cubie.position.set(x, y, z);
-
-            // Guardar posición original como propiedad
-            cubie.userData.originalPosition = { x, y, z };
-            cubie.userData.currentPosition = { x, y, z };
-
-            return cubie;
+        function rotate(point, axis, theta) {
+            const sin = Math.sin(theta);
+            const cos = Math.cos(theta);
+            const [x, y, z] = [point.x, point.y, point.z];
+            if (axis === 'x') {
+                point.y = y * cos - z * sin;
+                point.z = y * sin + z * cos;
+            } else if (axis === 'y') {
+                point.x = x * cos - z * sin;
+                point.z = x * sin + z * cos;
+            } else if (axis === 'z') {
+                point.x = x * cos - y * sin;
+                point.y = x * sin + y * cos;
+            }
         }
 
-        // Rotar una cara del cubo con estructura sólida
-        function rotateFace(face, isClockwise) {
-            if (rotationInProgress) return;
-            rotationInProgress = true;
+        function rotateFace(face) {
+            const theta = Math.PI / 2;
+            const sel = [];
 
-            const duration = 400; // ms
-            const rotationAngle = isClockwise ? Math.PI / 2 : -Math.PI / 2;
-            let rotationAxis;
-            let layerIndex;
-
-            // Seleccionar eje de rotación y capa según la cara
-            switch (face) {
-                case 'U':
-                    rotationAxis = new THREE.Vector3(0, 1, 0);
-                    layerIndex = 2; // y=2
-                    break;
-                case 'D':
-                    rotationAxis = new THREE.Vector3(0, 1, 0);
-                    layerIndex = 0; // y=0
-                    break;
-                case 'R':
-                    rotationAxis = new THREE.Vector3(1, 0, 0);
-                    layerIndex = 2; // x=2
-                    break;
-                case 'L':
-                    rotationAxis = new THREE.Vector3(1, 0, 0);
-                    layerIndex = 0; // x=0
-                    break;
-                case 'F':
-                    rotationAxis = new THREE.Vector3(0, 0, 1);
-                    layerIndex = 2; // z=2
-                    break;
-                case 'B':
-                    rotationAxis = new THREE.Vector3(0, 0, 1);
-                    layerIndex = 0; // z=0
-                    break;
-            }
-
-            // Grupo temporal para la rotación
-            const rotationGroup = new THREE.Group();
-            scene.add(rotationGroup);
-
-            // Obtener cubies que pertenecen a la cara que se está rotando
-            const cubiesToRotate = [];
-            for (let x = 0; x < 3; x++) {
-                for (let y = 0; y < 3; y++) {
-                    for (let z = 0; z < 3; z++) {
-                        const cubie = cube[x][y][z];
-                        if (!cubie) continue;
-
-                        let belongsToFace = false;
-
-                        switch (face) {
-                            case 'U': if (y === 2) belongsToFace = true; break;
-                            case 'D': if (y === 0) belongsToFace = true; break;
-                            case 'R': if (x === 2) belongsToFace = true; break;
-                            case 'L': if (x === 0) belongsToFace = true; break;
-                            case 'F': if (z === 2) belongsToFace = true; break;
-                            case 'B': if (z === 0) belongsToFace = true; break;
-                        }
-
-                        if (belongsToFace) {
-                            rotationGroup.attach(cubie);
-                            cubiesToRotate.push(cubie);
-                        }
-                    }
-                }
-            }
-
-            // Centrar el grupo de rotación
-            const groupCenter = new THREE.Vector3();
-            cubiesToRotate.forEach(cubie => {
-                groupCenter.add(cubie.position);
-            });
-            groupCenter.divideScalar(cubiesToRotate.length);
-            rotationGroup.position.copy(groupCenter);
-
-            // Centrar los cubies en el grupo
-            cubiesToRotate.forEach(cubie => {
-                cubie.position.sub(groupCenter);
+            cube.forEach(c => {
+                if (face === 'U' && Math.abs(c.y - 1) < 0.1) sel.push(c);
+                if (face === 'Ui' && Math.abs(c.y - 1) < 0.1) sel.push(c);
+                if (face === 'R' && Math.abs(c.x - 1) < 0.1) sel.push(c);
+                if (face === 'Ri' && Math.abs(c.x - 1) < 0.1) sel.push(c);
+                if (face === 'F' && Math.abs(c.z - 1) < 0.1) sel.push(c);
+                if (face === 'Fi' && Math.abs(c.z - 1) < 0.1) sel.push(c);
             });
 
-            // Animación de rotación
-            const startRotation = { angle: 0 };
-            const targetRotation = { angle: rotationAngle };
-
-            const startTime = Date.now();
-
-            function animateRotation() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                // Interpolación suave (easeOutCubic)
-                const t = 1 - Math.pow(1 - progress, 3);
-                const angle = startRotation.angle + t * targetRotation.angle;
-
-                rotationGroup.rotation.set(0, 0, 0);
-                rotationGroup.rotateOnAxis(rotationAxis, angle);
-
-                if (progress < 1) {
-                    requestAnimationFrame(animateRotation);
-                } else {
-                    // Finalizar la animación
-                    scene.remove(rotationGroup);
-
-                    // Recolocar los cubies en la escena y actualizar posiciones
-                    cubiesToRotate.forEach(cubie => {
-                        cubie.position.add(groupCenter);
-                        cubie.updateMatrixWorld();
-                        scene.attach(cubie);
-
-                        // Actualizar posición actual en el estado del cubo
-                        const worldPos = new THREE.Vector3();
-                        cubie.getWorldPosition(worldPos);
-                        cubie.userData.currentPosition = {
-                            x: Math.round(worldPos.x),
-                            y: Math.round(worldPos.y),
-                            z: Math.round(worldPos.z)
-                        };
-                    });
-
-                    rotationInProgress = false;
-
-                    // Actualizar estado del cubo en la matriz
-                    updateCubeMatrix(face, isClockwise);
-                }
-
-                renderer.render(scene, camera);
-            }
-
-            animateRotation();
+            sel.forEach(c => {
+                if (face === 'U') rotate(c, 'y', -theta);
+                if (face === 'Ui') rotate(c, 'y', theta);
+                if (face === 'R') rotate(c, 'x', -theta);
+                if (face === 'Ri') rotate(c, 'x', theta);
+                if (face === 'F') rotate(c, 'z', -theta);
+                if (face === 'Fi') rotate(c, 'z', theta);
+            });
         }
 
-        // Actualizar la matriz del cubo después de una rotación
-        function updateCubeMatrix(face, isClockwise) {
-            // Crear una copia temporal de la matriz actual
-            const tempMatrix = JSON.parse(JSON.stringify(cube));
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
 
-            // Actualizar la matriz basada en la rotación
-            switch (face) {
-                case 'U':
-                    for (let x = 0; x < 3; x++) {
-                        for (let z = 0; z < 3; z++) {
-                            const newX = isClockwise ? 2 - z : z;
-                            const newZ = isClockwise ? x : 2 - x;
-                            cube[x][2][z] = tempMatrix[newX][2][newZ];
-                        }
-                    }
-                    break;
-
-                case 'D':
-                    for (let x = 0; x < 3; x++) {
-                        for (let z = 0; z < 3; z++) {
-                            const newX = isClockwise ? z : 2 - z;
-                            const newZ = isClockwise ? 2 - x : x;
-                            cube[x][0][z] = tempMatrix[newX][0][newZ];
-                        }
-                    }
-                    break;
-
-                case 'R':
-                    for (let y = 0; y < 3; y++) {
-                        for (let z = 0; z < 3; z++) {
-                            const newY = isClockwise ? 2 - z : z;
-                            const newZ = isClockwise ? y : 2 - y;
-                            cube[2][y][z] = tempMatrix[2][newY][newZ];
-                        }
-                    }
-                    break;
-
-                case 'L':
-                    for (let y = 0; y < 3; y++) {
-                        for (let z = 0; z < 3; z++) {
-                            const newY = isClockwise ? z : 2 - z;
-                            const newZ = isClockwise ? 2 - y : y;
-                            cube[0][y][z] = tempMatrix[0][newY][newZ];
-                        }
-                    }
-                    break;
-
-                case 'F':
-                    for (let x = 0; x < 3; x++) {
-                        for (let y = 0; y < 3; y++) {
-                            const newX = isClockwise ? 2 - y : y;
-                            const newY = isClockwise ? x : 2 - x;
-                            cube[x][y][2] = tempMatrix[newX][newY][2];
-                        }
-                    }
-                    break;
-
-                case 'B':
-                    for (let x = 0; x < 3; x++) {
-                        for (let y = 0; y < 3; y++) {
-                            const newX = isClockwise ? y : 2 - y;
-                            const newY = isClockwise ? 2 - x : x;
-                            cube[x][y][0] = tempMatrix[newX][newY][0];
-                        }
-                    }
-                    break;
-            }
-        }
-
-        // Configurar event listeners
-        function setupEventListeners() {
-            // Botones de movimiento
-            document.querySelectorAll('.move-btn').forEach(button => {
-                button.addEventListener('click', () => {
-                    const move = button.dataset.move;
-                    const face = move.replace("'", "")[0];
-                    const isClockwise = !move.includes("'");
-                    rotateFace(face, isClockwise);
-
-                    // Efecto visual
-                    button.classList.add('pulsing');
-                    setTimeout(() => button.classList.remove('pulsing'), 500);
-                });
+            const rotated = cube.map(c => {
+                let x = c.x, y = c.y, z = c.z;
+                [x, z] = [x * Math.cos(orbit) - z * Math.sin(orbit), x * Math.sin(orbit) + z * Math.cos(orbit)];
+                [x, z] = [x * Math.cos(angleY) - z * Math.sin(angleY), x * Math.sin(angleY) + z * Math.cos(angleY)];
+                [y, z] = [y * Math.cos(angleX) - z * Math.sin(angleX), y * Math.sin(angleX) + z * Math.cos(angleX)];
+                return { x, y, z, original: c };
             });
 
-            // Botones de tutorial
-            document.getElementById('prev-step-btn').addEventListener('click', prevStep);
-            document.getElementById('next-step-btn').addEventListener('click', nextStep);
+            rotated.sort((a, b) => b.z - a.z);
 
-            // Botones de control
-            document.getElementById('scramble-btn').addEventListener('click', scrambleCube);
-            document.getElementById('solve-btn').addEventListener('click', solveCube);
-            document.getElementById('reset-btn').addEventListener('click', resetCube);
-        }
+            for (let c of rotated) {
+                const x = cx + c.x * size;
+                const y = cy + c.y * size;
+                const grd = ctx.createLinearGradient(x, y, x + size / 2, y + size / 2);
+                grd.addColorStop(0, '#00000055');
+                grd.addColorStop(1, '#ffffff22');
 
-        // Navegación del tutorial
-        function prevStep() {
-            const steps = document.querySelectorAll('.step');
-            if (currentStep > 0) {
-                steps[currentStep].classList.remove('active');
-                currentStep--;
-                steps[currentStep].classList.add('active');
-                document.getElementById('current-step').textContent = currentStep + 1;
+                ctx.fillStyle = grd;
+                ctx.fillRect(x - size / 2, y - size / 2, size - 4, size - 4);
 
-                // Simular ejecución de movimientos inversos
-                executeMoves(solutionMoves[currentStep].slice().reverse());
+                if (Math.abs(c.original.z - 1) < 0.1) ctx.fillStyle = 'red';
+                else if (Math.abs(c.original.z + 1) < 0.1) ctx.fillStyle = 'orange';
+                else if (Math.abs(c.original.x - 1) < 0.1) ctx.fillStyle = 'blue';
+                else if (Math.abs(c.original.x + 1) < 0.1) ctx.fillStyle = 'green';
+                else if (Math.abs(c.original.y - 1) < 0.1) ctx.fillStyle = 'white';
+                else if (Math.abs(c.original.y + 1) < 0.1) ctx.fillStyle = 'yellow';
+                else ctx.fillStyle = '#444';
+
+                ctx.fillRect(x - size / 2 + 5, y - size / 2 + 5, size - 10, size - 10);
             }
         }
 
-        function nextStep() {
-            const steps = document.querySelectorAll('.step');
-            if (currentStep < steps.length - 1) {
-                steps[currentStep].classList.remove('active');
-                currentStep++;
-                steps[currentStep].classList.add('active');
-                document.getElementById('current-step').textContent = currentStep + 1;
-
-                // Ejecutar movimientos del paso actual
-                executeMoves(solutionMoves[currentStep]);
-            }
-        }
-
-        // Ejecutar una secuencia de movimientos
-        function executeMoves(moves, index = 0) {
-            if (index >= moves.length) return;
-
-            const move = moves[index];
-            const face = move.replace("'", "").replace("2", "")[0];
-            const isClockwise = !move.includes("'");
-            const isDouble = move.includes("2");
-
-            rotateFace(face, isClockwise);
-
-            // Si es un movimiento doble, ejecutar dos veces
-            if (isDouble) {
-                setTimeout(() => {
-                    rotateFace(face, isClockwise);
-                    setTimeout(() => {
-                        executeMoves(moves, index + 1);
-                    }, 500);
-                }, 500);
-            } else {
-                setTimeout(() => {
-                    executeMoves(moves, index + 1);
-                }, 500);
-            }
-        }
-
-        // Revolver el cubo
-        function scrambleCube() {
-            const moves = ['U', 'D', 'R', 'L', 'F', 'B', 'U\'', 'D\'', 'R\'', 'L\'', 'F\'', 'B\''];
-            const numMoves = 20;
-            let count = 0;
-
-            function doScrambleMove() {
-                if (count >= numMoves) return;
-
-                const randomMove = moves[Math.floor(Math.random() * moves.length)];
-                const face = randomMove.replace("'", "")[0];
-                const isClockwise = !randomMove.includes("'");
-
-                rotateFace(face, isClockwise);
-
-                count++;
-                setTimeout(doScrambleMove, 300);
-            }
-
-            doScrambleMove();
-        }
-
-        // Resolver el cubo (simulado)
-        function solveCube() {
-            // Ir al último paso del tutorial
-            const steps = document.querySelectorAll('.step');
-            if (currentStep < steps.length - 1) {
-                steps[currentStep].classList.remove('active');
-                currentStep = steps.length - 1;
-                steps[currentStep].classList.add('active');
-                document.getElementById('current-step').textContent = currentStep + 1;
-            }
-
-            // Simular animación de resolución
-            const allMoves = solutionMoves.flat();
-            executeMoves(allMoves);
-        }
-
-        // Reiniciar el cubo
-        function resetCube() {
-            // Resetear a la posición inicial
-            scene.remove(cubeGroup);
-            createRubiksCube();
-
-            // Resetear tutorial
-            const steps = document.querySelectorAll('.step');
-            steps.forEach(step => step.classList.remove('active'));
-            currentStep = 0;
-            steps[0].classList.add('active');
-            document.getElementById('current-step').textContent = '1';
-
-            // Resetear cámara
-            camera.position.set(5, 5, 7);
-            controls.reset();
-        }
-
-        // Ajustar al redimensionar ventana
-        function onWindowResize() {
-            camera.aspect = document.getElementById('rubik-container').offsetWidth /
-                document.getElementById('rubik-container').offsetHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(document.getElementById('rubik-container').offsetWidth,
-                document.getElementById('rubik-container').offsetHeight);
-        }
-
-        // Animación
         function animate() {
+            orbit += 0.0025;
+            draw();
             requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
         }
 
-        // Iniciar la aplicación
-        init();
+        animate();
     </script>
 </body>
 
