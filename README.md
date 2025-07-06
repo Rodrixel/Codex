@@ -1,4 +1,7 @@
 Simulador de Cubo de Rubik 3D
+
+Agragando espacios
+
 Descripción General
 Este proyecto es un simulador de Cubo de Rubik 3D desarrollado con HTML, CSS y JavaScript, utilizando la biblioteca Three.js. Permite a los usuarios interactuar con un cubo de Rubik virtual en 3D, realizar movimientos estándar del cubo (U, D, L, R, F, B y sus inversos), mezclar el cubo, reiniciarlo y resolverlo siguiendo un tutorial paso a paso basado en el método para principiantes. El simulador cuenta con animaciones suaves, colores nativos del cubo de Rubik y un diseño responsivo para una experiencia de usuario atractiva.
 Características
