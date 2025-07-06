@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cubo Rubik 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        #canvas {
+            width: 100vw;
+            height: 70vh;
+            display: block;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(30, 30, 30, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        #controls button {
+            margin: 6px;
+            padding: 10px 16px;
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s, background 0.3s;
+        }
+
+        #controls button:hover {
+            background: linear-gradient(45deg, #1976D2, #1E88E5);
+            transform: scale(1.05);
+        }
+
+        #controls button:active {
+            transform: scale(0.95);
+        }
+
+        #tutorial {
+            position: absolute;
+            top: 70vh;
+            padding: 25px;
+            background: rgba(30, 30, 30, 0.85);
+            width: 100%;
+            box-sizing: border-box;
+            overflow-y: auto;
+            height: 30vh;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        #tutorial h2 {
+            margin-top: 0;
+            color: #4FC3F7;
+            font-size: 24px;
+            text-shadow: 0 0 5px rgba(79, 195, 247, 0.5);
+        }
+
+        #tutorial p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        #tutorial ol {
+            padding-left: 25px;
+        }
+
+        #tutorial li {
+            margin-bottom: 12px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        #tutorial strong {
+            color: #BBDEFB;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas"></div>
+    <div id="controls">
+        <button onclick="rotateFace('U')">U</button>
+        <button onclick="rotateFace('U\'')">U'</button>
+        <button onclick="rotateFace('D')">D</button>
+        <button onclick="rotateFace('D\'')">D'</button>
+        <button onclick="rotateFace('L')">L</button>
+        <button onclick="rotateFace('L\'')">L'</button>
+        <button onclick="rotateFace('R')">R</button>
+        <button onclick="rotateFace('R\'')">R'</button>
+        <button onclick="rotateFace('F')">F</button>
+        <button onclick="rotateFace('F\'')">F'</button>
+        <button onclick="rotateFace('B')">B</button>
+        <button onclick="rotateFace('B\'')">B'</button>
+        <button onclick="scrambleCube()">Scramble</button>
+        <button onclick="resetCube()">Reset</button>
+        <button onclick="solveCube()">Solve</button>
+    </div>
+    <div id="tutorial">
+        <h2>Rubik's Cube Solving Tutorial (Beginner's Method)</h2>
+        <p><strong>Notación:</strong> U (Up), D (Down), L (Left), R (Right), F (Front), B (Back). Apostrofe (') indica
+            giro antihorario, sin apostrofe es horario.</p>
+        <ol>
+            <li><strong>Cruz blanca:</strong> Forma una cruz blanca en la cara inferior (D). Usa movimientos como F, F',
+                R, R', etc., para alinear las aristas blancas con los centros.</li>
+            <li><strong>Esquinas blancas:</strong> Coloca las esquinas blancas en la cara inferior usando el algoritmo:
+                R' D' R D.</li>
+            <li><strong>Aristas de la capa media:</strong> Usa los algoritmos: U R U' R' U' F' U F (arista a la derecha)
+                o U' L' U L U F U' F' (arista a la izquierda).</li>
+            <li><strong>Cruz amarilla:</strong> Forma una cruz amarilla en la cara superior (U) con: F R U R' U' F'.
+            </li>
+            <li><strong>Orientar esquinas amarillas:</strong> Usa U R U' L' U R' U' L para orientar las esquinas
+                amarillas.</li>
+            <li><strong>Posicionar esquinas amarillas:</strong> Usa R' D' R D para colocar las esquinas en su posición
+                correcta.</li>
+            <li><strong>Posicionar aristas amarillas:</strong> Usa F2 U L R' F2 L' R U F2 para permutar las aristas.
+            </li>
+        </ol>
+        <p>Repite los algoritmos según sea necesario hasta resolver el cubo.</p>
+    </div>
+
+    <script>
+        let scene, camera, renderer, cubeGroup, cubes;
+        let isAnimating = false;
+        let moveQueue = [];
+        let solveMoves = [];
+
+        // Colores nativos del cubo de Rubik
+        const colors = {
+            white: 0xFFFFFF,   // Blanco puro
+            yellow: 0xFFFF00,  // Amarillo estándar
+            red: 0xB22222,     // Rojo fuego
+            orange: 0xFFA500,  // Naranja estándar
+            green: 0x009900,   // Verde estándar
+            blue: 0x0000FF     // Azul estándar
+        };
+
+        // Inicialización
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1c2526);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.7), 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.7);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas').appendChild(renderer.domElement);
+
+            // Iluminación
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 5, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            cubeGroup = new THREE.Group();
+            scene.add(cubeGroup);
+
+            // Crear los 27 cubitos
+            cubes = [];
+            for (let x = -1; x <= 1; x++) {
+                for (let y = -1; y <= 1; y++) {
+                    for (let z = -1; z <= 1; z++) {
+                        if (x === 0 && y === 0 && z === 0) continue; // Ignorar el centro
+                        const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+                        const materials = [
+                            new THREE.MeshStandardMaterial({
+                                color: x === 1 ? colors.red : colors.orange,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Derecha (+x)
+                            new THREE.MeshStandardMaterial({
+                                color: x === -1 ? colors.orange : colors.red,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Izquierda (-x)
+                            new THREE.MeshStandardMaterial({
+                                color: y === 1 ? colors.white : colors.yellow,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Arriba (+y)
+                            new THREE.MeshStandardMaterial({
+                                color: y === -1 ? colors.yellow : colors.white,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Abajo (-y)
+                            new THREE.MeshStandardMaterial({
+                                color: z === 1 ? colors.green : colors.blue,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Frente (+z)
+                            new THREE.MeshStandardMaterial({
+                                color: z === -1 ? colors.blue : colors.green,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }) // Atrás (-z)
+                        ];
+                        const cube = new THREE.Mesh(geometry, materials);
+                        cube.position.set(x, y, z);
+                        cube.castShadow = true;
+                        cube.receiveShadow = true;
+
+                        // Añadir bordes para mayor definición
+                        const edges = new THREE.EdgesGeometry(geometry);
+                        const line = new THREE.LineSegments(
+                            edges,
+                            new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 })
+                        );
+                        cube.add(line);
+
+                        cubeGroup.add(cube);
+                        cubes.push(cube);
+                    }
+                }
+            }
+
+            camera.position.set(3.5, 3.5, 3.5);
+            camera.lookAt(0, 0, 0);
+
+            // Controles de órbita
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            document.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging && !isAnimating) {
+                    const deltaMove = {
+                        x: e.clientX - previousMousePosition.x,
+                        y: e.clientY - previousMousePosition.y
+                    };
+                    const deltaRotationQuaternion = new THREE.Quaternion()
+                        .setFromEuler(new THREE.Euler(
+                            toRadians(deltaMove.y * 0.5),
+                            toRadians(deltaMove.x * 0.5),
+                            0,
+                            'XYZ'
+                        ));
+                    cubeGroup.quaternion.multiplyQuaternions(deltaRotationQuaternion, cubeGroup.quaternion);
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            animate();
+        }
+
+        function toRadians(angle) {
+            return angle * (Math.PI / 180);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Rotar una cara
+        function rotateFace(face) {
+            if (isAnimating) {
+                moveQueue.push(face);
+                return;
+            }
+            isAnimating = true;
+
+            let axis, angle, filter;
+            switch (face) {
+                case 'U': axis = new THREE.Vector3(0, 1, 0); angle = -Math.PI / 2; filter = c => c.position.y > 0.5; break;
+                case 'U\'': axis = new THREE.Vector3(0, 1, 0); angle = Math.PI / 2; filter = c => c.position.y > 0.5; break;
+                case 'D': axis = new THREE.Vector3(0, 1, 0); angle = Math.PI / 2; filter = c => c.position.y < -0.5; break;
+                case 'D\'': axis = new THREE.Vector3(0, 1, 0); angle = -Math.PI / 2; filter = c => c.position.y < -0.5; break;
+                case 'L': axis = new THREE.Vector3(1, 0, 0); angle = Math.PI / 2; filter = c => c.position.x < -0.5; break;
+                case 'L\'': axis = new THREE.Vector3(1, 0, 0); angle = -Math.PI / 2; filter = c => c.position.x < -0.5; break;
+                case 'R': axis = new THREE.Vector3(1, 0, 0); angle = -Math.PI / 2; filter = c => c.position.x > 0.5; break;
+                case 'R\'': axis = new THREE.Vector3(1, 0, 0); angle = Math.PI / 2; filter = c => c.position.x > 0.5; break;
+                case 'F': axis = new THREE.Vector3(0, 0, 1); angle = -Math.PI / 2; filter = c => c.position.z > 0.5; break;
+                case 'F\'': axis = new THREE.Vector3(0, 0, 1); angle = Math.PI / 2; filter = c => c.position.z > 0.5; break;
+                case 'B': axis = new THREE.Vector3(0, 0, 1); angle = Math.PI / 2; filter = c => c.position.z < -0.5; break;
+                case 'B\'': axis = new THREE.Vector3(0, 0, 1); angle = -Math.PI / 2; filter = c => c.position.z < -0.5; break;
+            }
+
+            const selectedCubes = cubes.filter(filter);
+            const tempGroup = new THREE.Group();
+            selectedCubes.forEach(cube => {
+                cubeGroup.remove(cube);
+                tempGroup.add(cube);
+            });
+            cubeGroup.add(tempGroup); // Añadir tempGroup a cubeGroup para rotaciones locales
+
+            let t = 0;
+            const duration = 300; // Animación rápida y fluida
+            function animateRotation() {
+                t += 16;
+                const progress = Math.min(t / duration, 1);
+                // Easing cuadrático para animaciones naturales
+                const easedProgress = progress < 0.5
+                    ? 2 * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                const currentAngle = angle * easedProgress;
+
+                // Aplicar rotación en el sistema de coordenadas local
+                tempGroup.rotation.set(0, 0, 0); // Resetear rotación
+                tempGroup.rotateOnAxis(axis, currentAngle);
+
+                renderer.render(scene, camera);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateRotation);
+                } else {
+                    selectedCubes.forEach(cube => {
+                        // Transformar posición en el sistema local
+                        const pos = cube.position.clone();
+                        const newPos = pos.clone().applyAxisAngle(axis, angle);
+                        // Redondear a la cuadrícula 3x3x3
+                        cube.position.set(
+                            Math.round(newPos.x * 10) / 10,
+                            Math.round(newPos.y * 10) / 10,
+                            Math.round(newPos.z * 10) / 10
+                        );
+
+                        // Actualizar materiales según el eje de rotación
+                        const materials = cube.material;
+                        if (Math.abs(axis.x) === 1) { // Rotación en X (R, R', L, L')
+                            cube.material = [
+                                materials[0], materials[1], // +x, -x
+                                materials[5], materials[4], // +y, -y
+                                materials[2], materials[3]  // +z, -z
+                            ];
+                        } else if (Math.abs(axis.y) === 1) { // Rotación en Y (U, U', D, D')
+                            cube.material = [
+                                materials[4], materials[5], // +x, -x
+                                materials[2], materials[3], // +y, -y
+                                materials[1], materials[0]  // +z, -z
+                            ];
+                        } else if (Math.abs(axis.z) === 1) { // Rotación en Z (F, F', B, B')
+                            cube.material = [
+                                materials[3], materials[2], // +x, -x
+                                materials[1], materials[0], // +y, -y
+                                materials[4], materials[5]  // +z, -z
+                            ];
+                        }
+                        cubeGroup.add(cube);
+                    });
+                    cubeGroup.remove(tempGroup);
+                    isAnimating = false;
+                    if (moveQueue.length > 0) {
+                        rotateFace(moveQueue.shift());
+                    }
+                }
+            }
+            requestAnimationFrame(animateRotation);
+        }
+
+        // Mezclar el cubo
+        function scrambleCube() {
+            moveQueue = [];
+            solveMoves = [];
+            const moves = ['U', 'U\'', 'D', 'D\'', 'L', 'L\'', 'R', 'R\'', 'F', 'F\'', 'B', 'B\''];
+            for (let i = 0; i < 20; i++) {
+                const move = moves[Math.floor(Math.random() * moves.length)];
+                moveQueue.push(move);
+                solveMoves.push(move);
+            }
+            if (!isAnimating) rotateFace(moveQueue.shift());
+        }
+
+        // Reiniciar el cubo
+        function resetCube() {
+            moveQueue = [];
+            solveMoves = [];
+            cubeGroup.rotation.set(0, 0, 0);
+            cubes.forEach(cube => cubeGroup.remove(cube));
+            cubeGroup = new THREE.Group();
+            scene.add(cubeGroup);
+            cubes = [];
+            for (let x = -1; x <= 1; x++) {
+                for (let y = -1; y <= 1; y++) {
+                    for (let z = -1; z <= 1; z++) {
+                        if (x === 0 && y === 0 && z === 0) continue;
+                        const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+                        const materials = [
+                            new THREE.MeshStandardMaterial({
+                                color: x === 1 ? colors.red : colors.orange,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Derecha (+x)
+                            new THREE.MeshStandardMaterial({
+                                color: x === -1 ? colors.orange : colors.red,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Izquierda (-x)
+                            new THREE.MeshStandardMaterial({
+                                color: y === 1 ? colors.white : colors.yellow,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Arriba (+y)
+                            new THREE.MeshStandardMaterial({
+                                color: y === -1 ? colors.yellow : colors.white,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Abajo (-y)
+                            new THREE.MeshStandardMaterial({
+                                color: z === 1 ? colors.green : colors.blue,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }), // Frente (+z)
+                            new THREE.MeshStandardMaterial({
+                                color: z === -1 ? colors.blue : colors.green,
+                                roughness: 0.5,
+                                metalness: 0.1
+                            }) // Atrás (-z)
+                        ];
+                        const cube = new THREE.Mesh(geometry, materials);
+                        cube.position.set(x, y, z);
+                        cube.castShadow = true;
+                        cube.receiveShadow = true;
+
+                        const edges = new THREE.EdgesGeometry(geometry);
+                        const line = new THREE.LineSegments(
+                            edges,
+                            new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 })
+                        );
+                        cube.add(line);
+
+                        cubeGroup.add(cube);
+                        cubes.push(cube);
+                    }
+                }
+            }
+        }
+
+        // Resolver el cubo
+        function solveCube() {
+            moveQueue = [];
+            const inverseMoves = solveMoves.reverse().map(move => {
+                return move.includes('\'') ? move.replace('\'', '') : move + '\'';
+            });
+            moveQueue = inverseMoves;
+            if (!isAnimating) rotateFace(moveQueue.shift());
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / (window.innerHeight * 0.7);
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.7);
+        });
+
+        init();
+    </script>
+</body>
+
+</html>
